@@ -1,62 +1,64 @@
-<div align="center">
-  <div>&nbsp;</div>
-  <img src="logo.png" width="300"/> <br>
-  <a href="https://trendshift.io/repositories/8133" target="_blank"><img src="https://trendshift.io/api/badge/repositories/8133" alt="myshell-ai%2FMeloTTS | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-</div>
+# zixi-51M
 
-## Introduction
-MeloTTS is a **high-quality multi-lingual** text-to-speech library by [MIT](https://www.mit.edu/) and [MyShell.ai](https://myshell.ai). Supported languages include:
+A Chinese-exclusive TTS voice model by Zixi Li. VITS2 lineage (forked from MeloTTS), 51.43M parameters, **Chinese-only, no BERT**.
 
-| Language | Example |
-| --- | --- |
-| English (American)    | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN-US/speed_1.0/sent_000.wav) |
-| English (British)     | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN-BR/speed_1.0/sent_000.wav) |
-| English (Indian)      | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN_INDIA/speed_1.0/sent_000.wav) |
-| English (Australian)  | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN-AU/speed_1.0/sent_000.wav) |
-| English (Default)     | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN-Default/speed_1.0/sent_000.wav) |
-| Spanish               | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/es/ES/speed_1.0/sent_000.wav) |
-| French                | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/fr/FR/speed_1.0/sent_000.wav) |
-| Chinese (mix EN)      | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/zh/ZH/speed_1.0/sent_008.wav) |
-| Japanese              | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/jp/JP/speed_1.0/sent_000.wav) |
-| Korean                | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/kr/KR/speed_1.0/sent_000.wav) |
+Three selling points:
 
-Some other features include:
-- The Chinese speaker supports `mixed Chinese and English`.
-- Fast enough for `CPU real-time inference`.
+- **Small** — 51M params is light enough for local inference, CPU included. No cloud, no API key, no GPU bill
+- **Chinese-exclusive** — the whole stack serves one language: 77 symbols, 6 tones, zero language-routing overhead, nothing multi-lingual left in the way
+- **One real person's voice** — not a synthetic stock voice, not a multi-speaker average. This is a single real human's voice, so the output keeps one person's timbre, rhythm and breath — that's what makes it hyper-realistic
 
-## Usage
-- [Use without Installation](docs/quick_use.md)
-- [Install and Use Locally](docs/install.md)
-- [Training on Custom Dataset](docs/training.md)
+Differences from upstream MeloTTS:
 
-The Python API and model cards can be found in [this repo](https://github.com/myshell-ai/MeloTTS/blob/main/docs/install.md#python-api) or on [HuggingFace](https://huggingface.co/myshell-ai).
+- **BERT fully removed** — the text encoder carries only phone + tone embeddings, no dangling compatibility shims
+- **Chinese-only** — no language embedding, no language selection; symbol table 77 (63 Chinese phones + punctuation + pad), tone table 6
+- **Embedding transplant warm start** — phone/tone/speaker embeddings inherited row-by-row from the MeloTTS-Chinese base by symbol name, no random init
+- Single speaker `zixi`; G has 51.43M params; D/DUR trained from scratch
 
-**Contributing**
+## Sample
 
-If you find this work useful, please consider contributing to this repo.
+[assets/final_showcase.wav](assets/final_showcase.wav) — one take, default inference parameters (`sdp_ratio=0.2, noise_scale=0.6, noise_scale_w=0.8`), text from Zixi Li's own fiction.
 
-- Many thanks to [@fakerybakery](https://github.com/fakerybakery) for adding the Web UI and CLI part.
+<audio controls src="assets/final_showcase.wav"></audio>
 
-## Authors
+## Install
 
-- [Wenliang Zhao](https://wl-zhao.github.io) at Tsinghua University
-- [Xumin Yu](https://yuxumin.github.io) at Tsinghua University
-- [Zengyi Qin](https://www.qinzy.tech) (project lead) at MIT and MyShell
-
-**Citation**
-```
-@software{zhao2024melo,
-  author={Zhao, Wenliang and Yu, Xumin and Qin, Zengyi},
-  title = {MeloTTS: High-quality Multi-lingual Multi-accent Text-to-Speech},
-  url = {https://github.com/myshell-ai/MeloTTS},
-  year = {2023}
-}
+```bash
+uv venv .venv --python 3.11
+uv pip install -e .
 ```
 
-## License
+(The monotonic_align MAS op JIT-compiles via numba — needs a numba-supported Python ≥3.10; 3.14 not yet.)
 
-This library is under MIT License, which means it is free for both commercial and non-commercial use.
+## Weights
+
+Released on Hugging Face as [`NoesisLab/zixi-51m`](https://huggingface.co/NoesisLab/zixi-51m), **weights only; training data is not part of this release**:
+
+```
+zixi-51m/
+├── config.json          # model hyperparams
+└── pytorch_model.bin    # final generator weights (51.43M params, 206MB)
+```
+
+## Quick inference
+
+```python
+# pip install this package (uv pip install -e . or git+https), then:
+from huggingface_hub import snapshot_download
+from zixi.api import TTS
+
+ckpt_dir = snapshot_download("NoesisLab/zixi-51m")   # downloads the two files above
+model = TTS(language='ZH',
+            config_path=f'{ckpt_dir}/config.json',
+            ckpt_path=f'{ckpt_dir}/pytorch_model.bin')
+model.tts_to_file('你好，世界。', model.hps.data.spk2id['zixi'], 'hello.wav')
+# → hello.wav, 44.1kHz Int16 mono
+```
+
+## Fine-tuning
+
+`zixi/train.py` and `zixi/preprocess_text.py` are the full training stack; the expected data layout is shown in [`zixi/data/example/metadata.list`](zixi/data/example/metadata.list) (`wav_path|speaker|ZH|text`, 44.1kHz mono wav). Point the config at your own speaker folder to fine-tune your own voice.
 
 ## Acknowledgements
 
-This implementation is based on [TTS](https://github.com/coqui-ai/TTS), [VITS](https://github.com/jaywalnut310/vits), [VITS2](https://github.com/daniilrobnikov/vits2) and [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2). We appreciate their awesome work.
+Based on [MeloTTS](https://github.com/myshell-ai/MeloTTS) (MIT, MyShell.ai), by Wenliang Zhao, Xumin Yu and Zengyi Qin. Base weights from `myshell-ai/MeloTTS-Chinese`. Upstream in turn builds on coqui-ai TTS, VITS, VITS2 and Bert-VITS2.

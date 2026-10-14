@@ -9,3 +9,16 @@ build/
 
 *.zip
 *.wav
+
+# 私有物: 数据/权重/环境一律不进仓库
+zixi/data/zixi/
+zixi/logs/
+pretrained/
+!pretrained/zh_base_config.json
+.venv/
+infer_out/
+dist/
+release/
+*.spec.pt
+!assets/*.wav
+.DS_Store

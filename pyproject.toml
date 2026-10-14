@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zixi-51m"
+version = "0.1.0"
+description = "Chinese-exclusive TTS, small enough for local inference, one real person's voice (VITS2, no BERT)"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Zixi Li" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "torch>=2.0",
+    "torchaudio>=2.0",
+    "numpy>=1.26",
+    "scipy",
+    "librosa>=0.10",
+    "soundfile",
+    "numba>=0.60",
+    "jieba",
+    "pypinyin",
+    "cn2an",
+    "matplotlib",
+    "tensorboard",
+    "tqdm",
+]
+
+[tool.setuptools.packages.find]
+include = ["zixi*"]
+
+[tool.setuptools.package-data]
+zixi = ["text/opencpop-strict.txt", "configs/config.json"]
