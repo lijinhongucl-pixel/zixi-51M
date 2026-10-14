@@ -1,5 +1,7 @@
 # zixi-51M
 
+![zixi-51M](assets/poster.png)
+
 *Not a stock voice. A voice.*
 
 A Chinese-exclusive TTS voice model by Zixi Li. VITS2 lineage (forked from MeloTTS), 51.43M parameters, **Chinese-only, no BERT**.
